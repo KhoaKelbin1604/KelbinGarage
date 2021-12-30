@@ -33,7 +33,7 @@
 
                 </ul>
 
-                <a href="/Kelbin Garage/cart.html" class="btn btn-outline-light">Orders (<span id="cart-quantity">0</span>)</a>
+                <a href="cart.html" class="btn btn-outline-light">Orders (<span id="cart-quantity">0</span>)</a>
 
                 <div id="account-info"></div>
             </div>
@@ -68,26 +68,35 @@
         </div>
     </form>
 
-    <!-- Content -->
     <div class="container mt-3">
+        <!-- Content -->
         <div class="container mt-3">
+            <form id="frm-create-product">
 
-            <a href="create.html" class="btn btn-outline-danger mb-3">Create a product</a>
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="name" placeholder="Name" required>
+                    <label for="username">Name of Cars</label>
+                </div>
 
-            <table class="table table-striped text-center">
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="description" placeholder="Description" required>
+                    <label for="description">Engine</label>
+                </div>
 
-                <thead class="bg-danger text-light">
-                    <tr>
-                        <th scope="col">Name of Cars</th>
-                        <th scope="col">Prices</th>
-                        <th scope="col">Engine</th>
-                        <th scope="col">Category</th>
-                    </tr>
-                </thead>
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="price" placeholder="Price" required>
+                    <label for="price">Prices</label>
+                </div>
 
-                <tbody id="product-list" class="border-danger"></tbody>
+                <div class="form-floating mb-3">
+                    <select id="category_id" class="form-select" required></select>
+                    <label for="category_id">Category</label>
+                </div>
 
-            </table>
+                <button type="submit" class="btn btn-danger">Create</button>
+                <a href="index.html" class="btn btn-danger">Back To Index</a>
+
+            </form>
         </div>
     </div>
     <section class="slide__body">
@@ -127,57 +136,62 @@
     <script src="../../js/database.js"></script>
 
     <script>
-        // lay ra san pham
-        window.onload = get_product;
-        // 2 buoc
-        // 1 lay san pham
-        function get_product() {
+        //input category vao select box.
+        window.onload = get_category;
+        //category: database
+        function get_category() {
             db.transaction(function(tx) {
-                var query = ` 
-                SELECT p.id, p.name, c.name AS category_name
-                FROM product p, category c
-                WHERE p.category_id = c.id
-                ORDER BY (p.name)
-                `;
+                var query = "SELECT * FROM category";
 
                 tx.executeSql(query, [], function(tx, result) {
-                    log(`INFO`, `Get a list of products successfully.`);
-                    show_product(result.rows);
+                    log(`INFO`, `Get list of categories successfully.`);
+
+                    add_category_option(result.rows);
                 }, transaction_error);
             });
         }
-        // 2 add vao table
-        function show_product(products) {
-            var product_list = document.getElementById("product-list");
 
-            for (var product of products) {
-                product_list.innerHTML += `
-                 <tr id="product-list-item-${product.id}">
-                    <td>${product.id}</td>
-                    <td class="text-start" id="product-list-name-${product.id}">${product.name}</td>
-                    <td>${product.category_name}</td>
-                    <td>
-                        <button id="${product.id}" onclick="delete_product(this.id)" class="btn btn-danger btn-sm">Delete</button>
-                    </td>
-                 </tr>
-                `;
+        //show dc cai category ra.
+        function add_category_option(categories) {
+            var category_select = document.getElementById("category_id");
+
+            category_select.innerHTML += `<option value="">SELECT Category</option>`;
+
+            for (var category of categories) {
+                category_select.innerHTML += `<option value="${category.id}">${category.name}</option>`;
             }
         }
-        // end lay ra san pham
+        // end input category vao select box.
 
-        //delete
-        function delete_product(id) {
+        // function nay se duoc chay khi bam cai but create. dong nghia la khi submit cai form
+        document.getElementById("frm-create-product").onsubmit = create_product;
+
+        // neu chay bang cai frm thi mac dinh luon co dong nay e.preventDefault();
+        function create_product(e) {
+            e.preventDefault();
+            //get input users.
+            var name = document.getElementById("name").value;
+            var description = document.getElementById("description").value;
+            var price = document.getElementById("price").value;
+            var category_id = document.getElementById("category_id").value;
+
+            // Insert a product into the database.
             db.transaction(function(tx) {
-                var query = "DELETE FROM product WHERE id = ?";
+                var query = `INSERT INTO product (name, description, price, category_id) VALUES (?,?,?,?)`;
 
-                tx.executeSql(query, [id], function(tx, result) {
-                    var product_name = document.getElementById(`product-list-name-${id}`);
-                    var message = `DELETE "${product_name.innerText}" successfully.`;
-
-                    document.getElementById(`product-list-item-${id}`).outerHTML = "";
-                    log(`INFO`, message);
-                    alert(message);
-                }, transaction_error);
+                tx.executeSql(
+                    query, [name, description, price, category_id],
+                    function(tx, result) {
+                        document.getElementById("frm-create-product").reset();
+                        //luc bam create xong no se tro len lai o name.
+                        document.getElementById("name").focus();
+                        // neu chay thanh cong no goi ra message
+                        var message = `Insert "${name}" successfully.`;
+                        log(`INFO`, message);
+                        alert(message);
+                    },
+                    transaction_error
+                );
             });
         }
     </script>
